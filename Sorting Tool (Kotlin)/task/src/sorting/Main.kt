@@ -1,5 +1,6 @@
 package sorting
 
+import java.io.File
 import java.util.Scanner
 
 var longs = mutableListOf<Long>()
@@ -11,39 +12,26 @@ enum class InpType { WORD, LINE, LONG}
 // default values
 var curInpType = InpType.WORD
 var isSortNatural = true
+var inpFileName = ""
+var outFileName = ""
 
 const val ARG_SORT_TYPE = "-sortingType"
 const val ARG_DATA_TYPE = "-dataType"
+const val INP_FILE = "-inputFile"
+const val OUT_FILE = "-outputFile"
 
 fun main(args: Array<String>) {
 
+    if (checkArgs(args)) return
+
     readLines()
-    if (convertToWords()) {
+    if (curInpType != InpType.LINE && convertToWords()) {
         println("Empty input!")
         return
     }
-
-    if (args.isNotEmpty())  {
-
-        if (args.contains(ARG_SORT_TYPE)) {
-            val i = args.indexOf(ARG_SORT_TYPE)
-            if (i < args.lastIndex)
-                if (args[i+1].equals("byCount"))
-                    isSortNatural = false
-        }
-
-        if (args.contains(ARG_DATA_TYPE)) {
-            val i = args.indexOf(ARG_DATA_TYPE)
-            if (i < args.lastIndex) {
-                if (args[i + 1].equals("long")) {
-                    curInpType = InpType.LONG
-                    convertToLongs()
-                }
-                else if (args[i + 1].equals("line")) {
-                    curInpType = InpType.LINE
-                }
-            }
-        }
+    if (curInpType == InpType.LONG && convertToLongs()) {
+        println("Empty input!")
+        return
     }
 
     if (isSortNatural)
@@ -63,14 +51,93 @@ fun main(args: Array<String>) {
         }
 }
 
+private fun checkArgs(args: Array<String>): Boolean {
+
+    val usedArgs = mutableListOf<String>()
+
+    if (args.isNotEmpty()) {
+        if (args.contains(INP_FILE)) {
+            val i = args.indexOf(INP_FILE)
+            usedArgs.add(args[i])
+            if (i < args.lastIndex) {
+                inpFileName = args[i + 1]
+                usedArgs.add(args[i + 1])
+            } else {
+                println("No input file defined!")
+                return true
+            }
+        }
+
+        if (args.contains(OUT_FILE)) {
+            val i = args.indexOf(OUT_FILE)
+            usedArgs.add(args[i])
+            if (i < args.lastIndex) {
+                outFileName = args[i + 1]
+                usedArgs.add(args[i + 1])
+            } else {
+                println("No output file defined!")
+                return true
+            }
+        }
+
+        if (args.contains(ARG_SORT_TYPE)) {
+            val i = args.indexOf(ARG_SORT_TYPE)
+            usedArgs.add(args[i])
+            if (i < args.lastIndex) {
+                if (args[i + 1].equals("byCount")) {
+                    isSortNatural = false
+                    usedArgs.add(args[i + 1])
+                } else if (args[i + 1].equals("natural")) {
+                    isSortNatural = true
+                    usedArgs.add(args[i + 1])
+                } else {
+                    println("No sorting type defined!")
+                    return true
+                }
+            } else {
+                println("No sorting type defined!")
+                return true
+            }
+        }
+
+        if (args.contains(ARG_DATA_TYPE)) {
+            val i = args.indexOf(ARG_DATA_TYPE)
+            usedArgs.add(args[i])
+            if (i < args.lastIndex) {
+                if (args[i + 1].equals("long")) {
+                    curInpType = InpType.LONG
+                    usedArgs.add(args[i + 1])
+                } else if (args[i + 1].equals("line")) {
+                    curInpType = InpType.LINE
+                    usedArgs.add(args[i + 1])
+                } else if (args[i + 1].equals("word")) {
+                    curInpType = InpType.WORD
+                    usedArgs.add(args[i + 1])
+                } else {
+                    println("No data type defined!")
+                    return true
+                }
+            } else {
+                println("No data type defined!")
+                return true
+            }
+        }
+    }
+
+    for (arg in args)
+        if (!usedArgs.contains(arg))
+            println("\"$arg\" is not a valid parameter. It will be skipped.")
+    return false
+}
+
 data class ElemNumber<T>(var elem: T, var int: Int)
 
 fun <T> printByCount(list: MutableList<ElemNumber<T>>, s: String, numElem: Int) {
 
-    println("Total $s: $numElem.")
+    writeTo("Total $s: $numElem.\n")
 
     for (elem in list)
-        println("${elem.elem}: ${elem.int} time(s), ${elem.int * 100 / numElem}%")
+        writeTo("${elem.elem}: ${elem.int} time(s), ${elem.int * 100 / numElem}%\n")
 }
 
 fun <T> sortByCount(list: MutableList<T>): MutableList<ElemNumber<T>> {
@@ -82,12 +149,16 @@ fun <T> sortByCount(list: MutableList<T>): MutableList<ElemNumber<T>> {
 }
 
 fun readLines(): Boolean {
-    val scanner = Scanner(System.`in`)
+
+    val scanner = if (inpFileName.isEmpty()) {
+        Scanner(System.`in`)
+    } else Scanner(File(inpFileName))
 
     // reading lines
     while (scanner.hasNext()) {
         lines.add(scanner.nextLine())
     }
+    scanner.close()
     return lines.isEmpty()
 }
 
@@ -108,8 +179,8 @@ private fun convertToLongs(): Boolean {
         val num = try {
             word.toLong()
         } catch (e: NumberFormatException) {
-            println("Wrong input!")
-            return true
+            println("\"$word\" is not a long. It will be skipped.")
+            continue
         }
         longs.add(num)
     }
@@ -118,10 +189,15 @@ private fun convertToLongs(): Boolean {
 
 fun <T> printNatural(list: MutableList<T>, elemName: String, delim: String) {
 
-    println("Total $elemName: ${list.size}.")
-    print("Sorted data:")
-    for (l in list) print("$delim$l")
-    println("")
+    writeTo("Total $elemName: ${list.size}.\n")
+    writeTo("Sorted data:")
+    for (l in list) writeTo("$delim$l")
+    writeTo("\n")
+}
+
+fun writeTo(s: String) {
+    if (outFileName.isEmpty()) print(s)
+    else File(outFileName).writeText(s)
 }
 
 fun <T> sortList(list: MutableList<T>): MutableList<T> {

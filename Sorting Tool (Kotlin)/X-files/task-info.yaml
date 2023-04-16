@@ -592,6 +592,16 @@ files:
 
 
   learner_created: false
+- name: input.txt
+  visible: true
+  learner_created: true
+- name: out.txt
+  visible: true
+  learner_created: true
 feedback_link: https://hyperskill.org/learn/step/9628#comment
-status: Unchecked
+status: Solved
+feedback:
+  message: Well done! You've finished the project. Select a new project on <a href="https://hyperskill.org/projects">Hyperskill</a>
+    to continue learning.
+  time: "Sun, 16 Apr 2023 22:56:29 UTC"
 record: -1
